@@ -1,0 +1,36 @@
+{
+    "train": [
+        {
+            "name": "RandomCrop",
+            "args": {"size": 32, "padding": 4}
+        },
+        {
+            "name": "RandomHorizontalFlip",
+            "args": {}
+        },
+        {
+            "name": "ToTensor",
+            "args": {}
+        },
+        {
+            "name": "Normalize",
+            "args": {
+                "mean": [0.4914, 0.4822, 0.4465],
+                "std": [0.2470, 0.2435, 0.2616]
+            }
+        }
+    ],
+    "val": [
+        {
+            "name": "ToTensor",
+            "args": {}
+        },
+        {
+            "name": "Normalize",
+            "args": {
+                "mean": [0.4914, 0.4822, 0.4465],
+                "std": [0.2470, 0.2435, 0.2616]
+            }
+        }
+    ]
+}
