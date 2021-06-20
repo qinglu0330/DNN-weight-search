@@ -33,7 +33,7 @@ def build_data_loader(name="imagenet", path="data", train=True,
                       num_workers=num_workers, pin_memory=True)
 
 
-def build_transform(transforms=[], cutout=None):
+def build_transform(transforms=[]):
     transform_list = []
     for trans in transforms:
         try:
@@ -50,12 +50,14 @@ class Dataset():
                  distributed=False, transforms={}):
         self.train_loader = build_data_loader(
             name=name, path=path, train=True,
-            transform=transforms["train"], distributed=distributed,
+            transform=build_transform(transforms["train"]),
+            distributed=distributed,
             batch_size=batch_size, num_workers=num_workers
         )
         self.val_loader = build_data_loader(
             name=name, path=path, train=False,
-            transform=transforms["val"], distributed=distributed,
+            transform=build_transform(transforms["val"]),
+            distributed=distributed,
             batch_size=batch_size, num_workers=num_workers
         )
         self.name = name

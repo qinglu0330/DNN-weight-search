@@ -9,7 +9,7 @@ import torch.distributed as dist
 from core import Conv2d, Linear
 
 
-def save_args(args, filename, verbose=True):
+def save_args(args, filename, verbose=False):
     if verbose is True:
         print(f"saving args to {filename}")
     with open(filename, 'w') as f:
@@ -24,7 +24,7 @@ def display_args(args):
     return
 
 
-def save_result(result, dir, verbose=True):
+def save_result(result, dir, verbose=False):
     data = pd.DataFrame()
     for name in result._fields:
         data[name] = getattr(result, name)
@@ -57,8 +57,7 @@ def plot_result(result, dir, verbose=True):
             val.columns, val.max())
     ])
     fig_path = os.path.join(dir, 'validation result.png')
-    if verbose is True:
-        plt.savefig(fig_path)
+    plt.savefig(fig_path)
     return
 
 
@@ -121,3 +120,33 @@ def print_factory_ddp(local_rank=None):
             print(*args, **kwargs)
         return
     return print_func
+
+
+def save_model_state(model, path):
+    state_dict = {}
+    for n, m in model.named_modules():
+        if isinstance(m, torch.nn.BatchNorm2d):
+            state_dict[n] = m.state_dict()
+        if isinstance(m, (Conv2d, Linear)):
+            state_dict[n] = {
+                "weight": m.get_weight(),
+                "bias": m.bias
+            }
+    torch.save(state_dict, path)
+    return
+
+
+def load_model_state(model, path):
+    state_dict = torch.load(path)
+    for n, m in model.named_modules():
+        if isinstance(m, torch.nn.BatchNorm2d):
+            m.load_state_dict(state_dict[n])
+
+        if isinstance(m, (Conv2d, Linear)):
+            if m.bias is not None:
+                m.bias.data.copy_(state_dict[n]["bias"].data)
+            if hasattr(m, "weight"):
+                m.weight.data.copy_(state_dict[n]["weight"].data)
+            elif hasattr(m, "init_weight"):
+                m.init_weight.data.copy_(state_dict[n]["weight"].data)
+    return

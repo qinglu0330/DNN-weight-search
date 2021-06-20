@@ -114,25 +114,39 @@ def _hook_parameters(model):
     if FLAGS.quant_mode != "by bit":
         raise f"quantization scheme '{FLAGS.quant_mode}' is not supported"
 
-    model.register_buffer(
-        "sign_vals", torch.tensor([-1, 1], requires_grad=False))
-    model.register_buffer(
-        "mag_vals", torch.tensor([0, 1], requires_grad=False))
-    alpha_size = (FLAGS.num_bits, ) + weight_size + (2, )
-    model.alpha = nn.Parameter(init_alpha(alpha_size))
-    # setattr(model, "Bit0", nn.Parameter(torch.ones(weight_size)))
-    # for i in range(1, FLAGS.num_bits):
-    #     setattr(model, f"Bit{i}",
-    #             nn.Parameter(torch.ones(weight_size)))
+    assert FLAGS.num_bits > 1
+    # model.register_buffer(
+    #     "sign_vals", torch.tensor([-1, 1], requires_grad=False))
+    alpha_size = weight_size + (2, )
+    model.alpha = nn.Parameter(torch.log(torch.ones(alpha_size) / 2))
 
     if FLAGS.quant_format == "int":
+        offset = 2 ** -(FLAGS.num_bits - 1)
         model.register_buffer(
-            "bit_weight", 2 ** -torch.arange(
-                FLAGS.num_bits - 1,
-                requires_grad=False).float() / 2)
-
-    # po2 to be added
-    # mask to be added
+            "init_weight",
+            torch.ones(weight_size, requires_grad=False) - offset
+        )
+        model.register_buffer(
+            "active_bit_weight",
+            torch.tensor(
+                [0, 2 ** (-FLAGS.active_bit)] if FLAGS.active_bit > 0
+                else [-1, 1],
+                requires_grad=False)
+        )
+    elif FLAGS.quant_format == "po2":
+        model.register_buffer(
+            "init_weight",
+            torch.ones(weight_size, requires_grad=False)
+        )
+        model.register_buffer(
+            "active_bit_weight",
+            torch.tensor(
+                [1, 2 ** -FLAGS.active_bit] if FLAGS.active_bit > 0
+                else [-1, 1],
+                requires_grad=False)
+        )
+    if FLAGS.quant_mode != "by bit" or FLAGS.active_bit == 0:
+        _initialize_alpha(model)
     return
 
 
@@ -151,21 +165,20 @@ def _get_weight(model):
             random=random)
         return weight
 
+    bit_val = categorical_sample(
+        model.alpha,
+        model.active_bit_weight,
+        hard=True, temp=temp, random=random)
+    if FLAGS.active_bit == 0:
+        return bit_val * model.init_weight
+
     if FLAGS.quant_format == "int":
-        bit_vals = []
-        for i in range(FLAGS.num_bits):
-            bit_val = categorical_sample(
-                model.alpha[i],
-                (model.sign_vals if i == 0 else model.mag_vals),
-                hard=True, temp=temp, random=random)
-            if i != FLAGS.active_bit:
-                bit_val = bit_val.detach()
-            bit_vals.append(bit_val)
-        sign_bit = bit_vals[0]
-        if FLAGS.num_bits > 1:
-            mag_bits = torch.stack(bit_vals[1:], dim=-1)
-        else:
-            mag_bits = 0
-        mag_vals = (mag_bits * model.bit_weight).sum(-1, keepdim=False)
-        weight = sign_bit * (mag_vals + 2 ** -(FLAGS.num_bits - 1))
-        return weight
+        return model.init_weight - bit_val * model.init_weight.sign()
+    elif FLAGS.quant_format == "po2":
+        return model.init_weight * bit_val
+
+
+def _initialize_alpha(model):
+    if hasattr(model, "alpha"):
+        model.alpha.data.copy_(init_alpha(model.alpha.size()))
+    return

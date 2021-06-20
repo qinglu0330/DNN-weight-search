@@ -42,6 +42,7 @@ class ProgressMeter():
 
 
 def _loss(output, target):
+    # print(output.size(), target.size())
     return F.cross_entropy(output, target)
 
 
@@ -66,7 +67,7 @@ def batch_optimize(model, optimizer, input_batch, label_batch):
 def batch_evaluate(model, input_batch, label_batch):
     with torch.no_grad():
         loss, correction1, correction5 = batch_forward(
-            input_batch, label_batch)
+            model, input_batch, label_batch)
     return loss, correction1, correction5
 
 
@@ -82,8 +83,8 @@ def train_epoch(model, data_loader, optimizer, device="cuda", verbose=False,
         (":.5f", ":.2%", ":.2%")
         )
     for i, (input_batch, label_batch) in enumerate(data_loader):
-        input_batch = input_batch.to(device, nonblocking=True)
-        label_batch = input_batch.to(device, nonblocking=True)
+        input_batch = input_batch.to(device, non_blocking=True)
+        label_batch = label_batch.to(device, non_blocking=True)
         loss, correction1, correction5 = batch_optimize(
             model, optimizer,
             input_batch, label_batch)
@@ -114,10 +115,10 @@ def evaluate(model, data_loader, device="cuda", verbose=False,
         (":.5f", ":.2%", ":.2%")
         )
     for i, (input_batch, label_batch) in enumerate(data_loader):
-        input_batch = input_batch.to(device, nonblocking=True)
-        label_batch = input_batch.to(device, nonblocking=True)
+        input_batch = input_batch.to(device, non_blocking=True)
+        label_batch = label_batch.to(device, non_blocking=True)
         loss, correction1, correction5 = batch_evaluate(
-            input_batch, label_batch)
+            model, input_batch, label_batch)
         if distributed is True:
             loss, correction1, correction5 = synchronize_all(
                 loss, correction1, correction5)

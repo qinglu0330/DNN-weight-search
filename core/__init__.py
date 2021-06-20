@@ -37,6 +37,9 @@ def Network(architecture: str, num_classes: int = 1000, FLAGS=None):
               "architecture {} not supported.".format(architecture))
     network = MODELS[architecture]
     model = network(num_classes=num_classes, FLAGS=FLAGS)
+    # if FLAGS.quant_mode != "by bit" or FLAGS.active_bit == 0:
+    #     for m in model.modules():
+    #         _initialize_alpha(m)
     return model
 
 
