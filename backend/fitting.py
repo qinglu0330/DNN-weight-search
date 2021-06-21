@@ -1,7 +1,7 @@
 import torch
 import torch.nn.functional as F
 import time
-from .utils import synchronize_all
+# from .utils import synchronize_all
 
 
 class ProgressMeter():
@@ -71,8 +71,7 @@ def batch_evaluate(model, input_batch, label_batch):
     return loss, correction1, correction5
 
 
-def train_epoch(model, data_loader, optimizer, device="cuda", verbose=False,
-                distributed=False):
+def train_epoch(model, data_loader, optimizer, device="cuda", verbose=False):
     model.train()
     running_loss = running_total = 0
     running_correct1 = running_correct5 = 0
@@ -88,9 +87,7 @@ def train_epoch(model, data_loader, optimizer, device="cuda", verbose=False,
         loss, correction1, correction5 = batch_optimize(
             model, optimizer,
             input_batch, label_batch)
-        if distributed is True:
-            loss, correction1, correction5 = synchronize_all(
-                loss, correction1, correction5)
+
         running_loss += loss.item() * input_batch.size(0)
         running_correct1 += correction1.item()
         running_correct5 += correction5.item()
@@ -104,8 +101,7 @@ def train_epoch(model, data_loader, optimizer, device="cuda", verbose=False,
     return avg_loss, avg_acc1, avg_acc5, meter.elasped_time
 
 
-def evaluate(model, data_loader, device="cuda", verbose=False,
-             distributed=False):
+def evaluate(model, data_loader, device="cuda", verbose=False):
     model.eval()
     running_loss = running_total = 0
     running_correct1 = running_correct5 = 0
@@ -119,9 +115,7 @@ def evaluate(model, data_loader, device="cuda", verbose=False,
         label_batch = label_batch.to(device, non_blocking=True)
         loss, correction1, correction5 = batch_evaluate(
             model, input_batch, label_batch)
-        if distributed is True:
-            loss, correction1, correction5 = synchronize_all(
-                loss, correction1, correction5)
+
         running_loss += loss.item() * input_batch.size(0)
         running_correct1 += correction1.item()
         running_correct5 += correction5.item()

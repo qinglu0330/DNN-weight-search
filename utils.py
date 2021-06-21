@@ -92,6 +92,13 @@ def synchronize(tensor):
     return tensor.item() / world_size
 
 
+def synchronize_all(*tensors):
+    ret = []
+    for tensor in tensors:
+        ret.append(synchronize(tensor))
+    return tuple(ret)
+
+
 def compute_model_size(model):
     count = 0
     for m in model.modules():

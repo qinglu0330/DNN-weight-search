@@ -5,6 +5,7 @@
     "batch_size": 128,
     "epochs": 200,
     "optimizer": "Cos",
+    "eta_min": 0.001,
     "gamma": 0.1,
     "milestones": [100, 150],
     "temp": 1,

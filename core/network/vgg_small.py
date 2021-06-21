@@ -103,5 +103,5 @@ class VGGSmall(nn.Module):
 
 
 @register
-def vgg_small(num_classes=1000, FLAGS=None):
+def vgg_small(num_classes=10, FLAGS=None):
     return VGGSmall(num_classes=num_classes, FLAGS=FLAGS)

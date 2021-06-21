@@ -125,6 +125,6 @@ class ResNet(nn.Module):
 
 
 @register
-def resnet20(num_classes=1000, FLAGS=None):
+def resnet20(num_classes=10, FLAGS=None):
     return ResNet(
         BasicBlock, [3, 3, 3], num_classes=num_classes, FLAGS=FLAGS)

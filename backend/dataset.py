@@ -18,10 +18,8 @@ def build_data_loader(name="imagenet", path="data", train=True,
             download=True)
     except AttributeError:
         dataset = torchvision.datasets.ImageFolder(
-            root=path,
-            transform=transform,
-            train=train,
-            download=True)
+            root=path + ("/train" if train is True else "/val"),
+            transform=transform)
     if distributed is True:
         sampler = DistributedSampler(dataset, shuffle=train)
     else:

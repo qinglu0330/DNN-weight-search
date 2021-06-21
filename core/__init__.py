@@ -12,7 +12,7 @@ for finder, name, ispkg in pkgutil.iter_modules(
     importlib.import_module(name)
 
 
-def Network(architecture: str, num_classes: int = 1000, FLAGS=None):
+def Network(architecture: str, FLAGS=None, **kwargs):
     """user interface for building a registered neural network
 
     Parameters
@@ -36,7 +36,7 @@ def Network(architecture: str, num_classes: int = 1000, FLAGS=None):
         raise TypeError(
               "architecture {} not supported.".format(architecture))
     network = MODELS[architecture]
-    model = network(num_classes=num_classes, FLAGS=FLAGS)
+    model = network(FLAGS=FLAGS, **kwargs)
     # if FLAGS.quant_mode != "by bit" or FLAGS.active_bit == 0:
     #     for m in model.modules():
     #         _initialize_alpha(m)

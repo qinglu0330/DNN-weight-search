@@ -25,7 +25,7 @@ def parse_args():
     parser.add_argument('-d', '--dataset', type=str, default="cifar10")
     parser.add_argument('-p', '--path', type=str, default='data/')
     parser.add_argument('--transform-json', type=str, default=None)
-    parser.add_argument('--num-classes', type=int, default=1000)
+    # parser.add_argument('--num-classes', type=int, default=1000)
 
     # Quantization
     parser.add_argument('-q', '--quantize-network', action="store_true")
@@ -82,7 +82,7 @@ def main():
         f"cuda:{args.local_rank if args.distributed is True else args.gpu}")
     model = Network(
         args.arch,
-        num_classes=args.num_classes, FLAGS=FLAGS
+        FLAGS=FLAGS
         ).to(device)
     if args.load_model_state:
         # model.load_state_dict(torch.load(args.load_model_state))
@@ -91,14 +91,14 @@ def main():
         loss, acc1, acc5, _ = evaluate(
             model, dataset.val_loader,
             verbose=args.verbose,
-            device=device, distributed=args.distributed)
+            device=device)
         print(f"Eval result => Averaged loss: {loss:.5f}, acc@1: {acc1:.2%}, "
               f"acc@5: {acc5:.2%} ")
 
     num_quant_layers = utils.count_quant_layers(model)
     print(f"{args.arch}: {num_quant_layers} layers are quantized")
     if args.distributed is True:
-        if FLAGS.sync_bn is True:
+        if args.sync_bn is True:
             print("synchronizing BN")
             model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
         model = DistributedDataParallel(
@@ -167,25 +167,40 @@ def fitting(model, dataset, optimizer, lr_scheduler, epochs,
             device="cuda", verbose=False, distributed=False):
     train_loss, train_acc1, train_acc5 = [], [], []
     val_loss, val_acc1, val_acc5 = [], [], []
+    train_time = []
     best_acc1 = best_acc5 = 0
     for epoch in range(epochs):
         if distributed is True:
             dataset.train_loader.sampler.set_epoch(epoch)
+        print('-' * 50)
         print(f"Epoch: {epoch + 1}/{epochs} \t "
               f"lr={lr_scheduler.get_last_lr()[0]}, "
               f"temperature={FLAGS.temp}, random={FLAGS.random}")
-        loss, acc1, acc5, _ = train_epoch(
+        loss, acc1, acc5, time = train_epoch(
             model, dataset.train_loader, optimizer,
-            device=device, verbose=verbose, distributed=distributed)
+            device=device, verbose=verbose)
+        if distributed:
+            utils.synchronize_all(
+                torch.tensor(loss).to(device),
+                torch.tensor(acc1).to(device),
+                torch.tensor(acc5).to(device)
+                )
         # print(model.layer1[0].conv1.alpha[0][0][0])
         train_loss.append(loss)
         train_acc1.append(acc1)
         train_acc5.append(acc5)
+        train_time.append(time)
         print(f"Training result => Averaged loss: {loss:.5f}, "
               f"acc@1: {acc1:.2%}, acc@5: {acc5:.2%}")
         loss, acc1, acc5, _ = evaluate(
             model, dataset.val_loader,
-            device=device, verbose=verbose, distributed=distributed)
+            device=device, verbose=verbose)
+        if distributed:
+            utils.synchronize_all(
+                torch.tensor(loss).to(device),
+                torch.tensor(acc1).to(device),
+                torch.tensor(acc5).to(device)
+                )
         val_loss.append(loss)
         val_acc1.append(acc1)
         val_acc5.append(acc5)
@@ -199,10 +214,10 @@ def fitting(model, dataset, optimizer, lr_scheduler, epochs,
         set_temperature(epoch+1)
     History = collections.namedtuple("History", [
         "train_loss", "train_acc1", "train_acc5",
-        "val_loss", "val_acc1", "val_acc5"])
+        "val_loss", "val_acc1", "val_acc5", "train_time"])
     history = History(
         train_loss, train_acc1, train_acc5,
-        val_loss, val_acc1, val_acc5)
+        val_loss, val_acc1, val_acc5, train_time)
     return history
 
 
