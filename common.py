@@ -8,7 +8,6 @@ FLAGS = Namespace()
 
 def setup(args):
     _copy(read_json(args.train_json))
-    _copy(read_json(args.quant_json))
     if args.distributed is True:
         dist.init_process_group(
             backend="nccl",
@@ -21,7 +20,12 @@ def setup(args):
     FLAGS.quantize_first_layer = args.quantize_first_layer
     FLAGS.quantize_last_layer = args.quantize_last_layer
     FLAGS.hard = not args.soft
-    FLAGS.active_bit = args.active_bit
+    if args.quant_json is not None:
+        FLAGS.quant_mode = "by value"
+        FLAGS.quant_vals = read_json(args.quant_json)
+    else:
+        FLAGS.quant_mode = "by bit"
+        FLAGS.active_bit = args.active_bit
     return
 
 

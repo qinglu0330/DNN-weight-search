@@ -113,9 +113,16 @@ def main():
         momentum=FLAGS.momentum,
         weight_decay=FLAGS.weight_decay)
 
-    lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(
-        optimizer, milestones=FLAGS.milestones, gamma=FLAGS.gamma
-    )
+    if FLAGS.optimizer == "SGD":
+        lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(
+            optimizer, milestones=FLAGS.milestones, gamma=FLAGS.gamma
+        )
+    elif FLAGS.optimizer == "Cos":
+        lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+            optimizer, FLAGS.epochs
+        )
+    else:
+        raise f"optimizer type {FLAGS.optimizer} not known"
 
     result = fitting(
         model, dataset, optimizer, lr_scheduler,
@@ -170,6 +177,7 @@ def fitting(model, dataset, optimizer, lr_scheduler, epochs,
         loss, acc1, acc5, _ = train_epoch(
             model, dataset.train_loader, optimizer,
             device=device, verbose=verbose, distributed=distributed)
+        # print(model.layer1[0].conv1.alpha[0][0][0])
         train_loss.append(loss)
         train_acc1.append(acc1)
         train_acc5.append(acc5)

@@ -1,7 +1,7 @@
 .DS_Store
 backup/
 **/__pycache__
-*.ipynb*
+# *.ipynb*
 *.pyc
 data/
 *debug*

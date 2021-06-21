@@ -94,7 +94,7 @@ class ResNet(nn.Module):
             FLAGS=FLAGS)
         self.linear = Linear(
             64, num_classes,
-            quantized=(quantized and FLAGS.quantize_first_layer),
+            quantized=(quantized and FLAGS.quantize_last_layer),
             FLAGS=FLAGS)
 
         self.apply(_weights_init)

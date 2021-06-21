@@ -1,5 +1,0 @@
-{
-    "quant_mode": "by bit",
-    "num_bits": 4,
-    "quant_format": "int"
-}
