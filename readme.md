@@ -57,8 +57,8 @@ ___
 
    CIFAR10
 
-   ![vggsmall](results/figures/vggsmall-training.svg) 
-   ![vggsmall](results/figures/resnet20-training.svg)
+   ![vggsmall](figures/vggsmall-training.svg) 
+   ![vggsmall](figures/resnet20-training.svg)
 
    ImageNet
 
