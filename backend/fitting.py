@@ -9,7 +9,7 @@ class ProgressMeter():
         self.bar_width = bar_width
         self.total = total
         self.step = 0
-        self.elasped_time, self.tic = 0, time.time()
+        self.elapsed_time, self.tic = 0, time.time()
         self.stats = {m: 0 for m in metrics}
         self.format = format
 
@@ -19,7 +19,7 @@ class ProgressMeter():
             return
         self.step += 1
         toc = time.time()
-        self.elasped_time += toc - self.tic
+        self.elapsed_time += toc - self.tic
         self.tic = toc
         for i, k in enumerate(self.stats):
             self.stats[k] = stats[i]
@@ -27,7 +27,7 @@ class ProgressMeter():
     def display(self):
         progress = int(self.bar_width * self.step / self.total)
         bar = '|' + '=' * progress + '>' * (self.bar_width - progress) + '|'
-        stats = f"{self.step / self.total:.2%}-{self.elasped_time:.1f}s "
+        stats = f"{self.step / self.total:.2%}-{self.elapsed_time:.1f}s "
         for fmt, (k, v) in zip(self.format, self.stats.items()):
             stats += (k + ": {" + fmt + "} ").format(v)
         print('\r'+bar+stats, end='')
@@ -36,7 +36,7 @@ class ProgressMeter():
 
     def _reset(self):
         self.step = 0
-        self.elasped_time, self.tic = 0, time.time()
+        self.elapsed_time, self.tic = 0, time.time()
         for k in self.stats.keys():
             self.stats[k] = 0
 
@@ -95,10 +95,11 @@ def train_epoch(model, data_loader, optimizer, device="cuda", verbose=False):
         avg_loss = running_loss / running_total
         avg_acc1 = running_correct1 / running_total
         avg_acc5 = running_correct5 / running_total
+        meter.update(avg_loss, avg_acc1, avg_acc5)
         if verbose is True:
-            meter.update(avg_loss, avg_acc1, avg_acc5)
             meter.display()
-    return avg_loss, avg_acc1, avg_acc5, meter.elasped_time
+    # print(meter.elapsed_time)
+    return avg_loss, avg_acc1, avg_acc5, meter.elapsed_time
 
 
 def evaluate(model, data_loader, device="cuda", verbose=False):
@@ -126,7 +127,7 @@ def evaluate(model, data_loader, device="cuda", verbose=False):
         if verbose is True:
             meter.update(avg_loss, avg_acc1, avg_acc5)
             meter.display()
-    return avg_loss, avg_acc1, avg_acc5, meter.elasped_time
+    return avg_loss, avg_acc1, avg_acc5, meter.elapsed_time
 
 
 def count_correction(output_batch, label_batch, k=1):
