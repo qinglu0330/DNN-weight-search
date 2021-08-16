@@ -113,13 +113,15 @@ def main():
         momentum=FLAGS.momentum,
         weight_decay=FLAGS.weight_decay)
 
-    if FLAGS.optimizer == "SGD":
+    if FLAGS.lr_scheduler == "Step":
         lr_scheduler = torch.optim.lr_scheduler.MultiStepLR(
             optimizer, milestones=FLAGS.milestones, gamma=FLAGS.gamma
         )
-    elif FLAGS.optimizer == "Cos":
+    elif FLAGS.lr_scheduler == "Cos":
+        period = FLAGS.epochs if FLAGS.lr_step == "epoch" else \
+            FLAGS.epochs * len(dataset.train_loader)
         lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-            optimizer, FLAGS.epochs
+            optimizer, period
         )
     else:
         raise f"optimizer type {FLAGS.optimizer} not known"
@@ -178,7 +180,8 @@ def fitting(model, dataset, optimizer, lr_scheduler, epochs,
               f"temperature={FLAGS.temp}, random={FLAGS.random}")
         loss, acc1, acc5, time = train_epoch(
             model, dataset.train_loader, optimizer,
-            device=device, verbose=verbose)
+            device=device, verbose=verbose,
+            lr_scheduler=lr_scheduler if FLAGS.lr_step == "batch" else None)
         if distributed:
             utils.synchronize_all(
                 torch.tensor(loss).to(device),
@@ -209,7 +212,8 @@ def fitting(model, dataset, optimizer, lr_scheduler, epochs,
         print(f"Eval result => Averaged loss: {loss:.5f}, acc@1: {acc1:.2%} "
               f"({best_acc1:.2%}), acc@5: {acc5:.2%} "
               f"({best_acc5:.2%})")
-        lr_scheduler.step()
+        if FLAGS.lr_step == "epoch":
+            lr_scheduler.step()
         set_randomness(epoch+1)
         set_temperature(epoch+1)
     History = collections.namedtuple("History", [

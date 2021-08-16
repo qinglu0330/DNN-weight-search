@@ -26,6 +26,8 @@ def setup(args):
     else:
         FLAGS.quant_mode = "by bit"
         FLAGS.active_bit = args.active_bit
+    if FLAGS.lr_scheduler != "Cos":
+        FLAGS.lr_step = "epoch"
     return
 
 

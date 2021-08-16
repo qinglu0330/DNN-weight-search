@@ -71,7 +71,8 @@ def batch_evaluate(model, input_batch, label_batch):
     return loss, correction1, correction5
 
 
-def train_epoch(model, data_loader, optimizer, device="cuda", verbose=False):
+def train_epoch(model, data_loader, optimizer, device="cuda",
+                verbose=False, lr_scheduler=None):
     model.train()
     running_loss = running_total = 0
     running_correct1 = running_correct5 = 0
@@ -98,6 +99,9 @@ def train_epoch(model, data_loader, optimizer, device="cuda", verbose=False):
         meter.update(avg_loss, avg_acc1, avg_acc5)
         if verbose is True:
             meter.display()
+        if lr_scheduler is not None:
+            lr_scheduler.step()
+            # print("lr adjusted")
     # print(meter.elapsed_time)
     return avg_loss, avg_acc1, avg_acc5, meter.elapsed_time
 

@@ -2,7 +2,11 @@
 ---
 This repository applies the catetorical searching method to solve the problem of training a weight-quantized neural network, where each quantized weight is represented by a discrete node with the value candidates being the output of the node.
 ___
-
+### Requirement
+> python >= 3.6  
+> torch == 1.7.1  
+> torchvision == 0.8.2
+___
 ### Usage
 1. To train a neural network from scratch  
     ```
@@ -21,7 +25,7 @@ ___
     ```
     python train.py -a resnet18 -d imagenet -p /dataset/imagenet/ \
                     --train-json json/training/resnet18-200.json \
-                    --quant-json json/qiantization/1b.json \
+                    --quant-json json/valueset/1b.json \
                     --quantize-network
     ```
 

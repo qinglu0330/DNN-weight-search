@@ -3,7 +3,7 @@ import torch.nn.functional as F
 
 
 def sample_softmax(logits, hard=False, temp=1, random=0,
-                   eps=1e-10, dim=-1, topk=1):
+                   eps=1e-10, dim=-1):
     if not torch.jit.is_scripting():
         if type(logits) is not torch.Tensor and \
            F.has_torch_function((logits,)) is True:
@@ -21,8 +21,9 @@ def sample_softmax(logits, hard=False, temp=1, random=0,
 
     if hard:
         # Straight through.
-        # index = y_soft.max(dim, keepdim=True)[1]
-        index = y_soft.topk(topk, dim=dim)[1]
+        index = y_soft.max(dim, keepdim=True)[1]
+        # index = y_soft.topk(topk, dim=dim)[1] using the topk function will
+        # significantly slow down the execution
         y_hard = torch.zeros_like(
             logits,
             memory_format=torch.legacy_contiguous_format
@@ -35,6 +36,6 @@ def sample_softmax(logits, hard=False, temp=1, random=0,
 
 
 def categorical_sample(logits, category_values, hard=True, temp=1,
-                       random=0, topk=1):
-    y = sample_softmax(logits, hard=hard, temp=temp, random=random, topk=topk)
+                       random=0):
+    y = sample_softmax(logits, hard=hard, temp=temp, random=random)
     return (y * category_values).sum(dim=-1, keepdim=False)
